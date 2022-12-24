@@ -21,6 +21,7 @@ namespace Target {
         public int OverlayWidth { get; set; } = 160;
         public int OverlayHeight { get; set; } = 100;
         public float OverlayBGOpacity { get; set; } = 0.5f;
+        public float FontScale { get; set; } = 1f;
 
         public Vector4 TargetColour { get; set; } = new(220 / 255.0f, 220 / 255.0f, 220 / 255.0f, 0.8f);
         public Vector4 NoTargetColour { get; set; } = new(140 / 255.0f, 140 / 255.0f, 140 / 255.0f, 0.8f);

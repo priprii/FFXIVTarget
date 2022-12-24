@@ -44,6 +44,7 @@ namespace Target {
                             if(o.ObjectKind != Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) { continue; }
                             if(o.Name.TextValue == p.Name) { pO = o; break; }
                         }
+                        ImGui.SetWindowFontScale(Plugin.Config.FontScale);
                         ImGui.TextColored(pO != null && pO.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId ? Plugin.Config.TargetColour : Plugin.Config.NoTargetColour, $"[{p.TargetTime.Hour.ToString("00")}:{p.TargetTime.Minute.ToString("00")}] {p.Name}");
                         if(Plugin.Config.LClickTarget && pO != null && ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
                             Plugin.Targets.Target = pO;

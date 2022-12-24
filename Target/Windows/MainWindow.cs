@@ -38,6 +38,8 @@ namespace Target {
             ImGuiEx.DragInt("Width###overlayWidth", Plugin.Config, nameof(Plugin.Config.OverlayWidth), 1, 40, 400);
             ImGuiEx.DragInt("Height###overlayHeight", Plugin.Config, nameof(Plugin.Config.OverlayHeight), 1, 40, 400);
             ImGuiEx.DragFloat("BG Opacity###bgOpacity", Plugin.Config, nameof(Plugin.Config.OverlayBGOpacity), 0.05f, 0f, 1f);
+            ImGuiEx.DragFloat("Font Scale###fontScale", Plugin.Config, nameof(Plugin.Config.FontScale), 0.05f, 0f, 2f);
+
             ImGuiEx.ColorEdit4("Target###colTar", Plugin.Config, nameof(Plugin.Config.TargetColour));
             ImGuiEx.ColorEdit4("No Target###colNoTar", Plugin.Config, nameof(Plugin.Config.NoTargetColour));
 
