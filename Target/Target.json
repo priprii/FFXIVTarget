@@ -1,11 +1,11 @@
 [{
   "Author": "Pyon",
-  "Name": "Target",
+  "Name": "TargetPyon",
   "Punchline": "Track who is targeting you in an overlay list.",
   "Description": "Track who is targeting you in an overlay list.",
   "Changelog": "",
   "InternalName": "Target",
-  "AssemblyVersion": "1.0.0.3",
+  "AssemblyVersion": "1.0.0.4",
   "RepoUrl": "https://github.com/priprii/FFXIVTarget",
   "ApplicableVersion": "any",
   "Tags": [

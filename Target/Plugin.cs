@@ -75,6 +75,7 @@ namespace Target {
         }
 
         private void OnTerritoryChanged(object? sender, ushort e) {
+            if(ContentFinderConditionsSheet == null) { return; }
             ContentFinderCondition content = ContentFinderConditionsSheet.FirstOrDefault(c => c.TerritoryType.Row == ClientState.TerritoryType);
             if(content == null) {
                 ContentType = ContentTypes.NoDuty;

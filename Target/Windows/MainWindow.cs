@@ -109,14 +109,14 @@ namespace Target {
             ImGui.Separator();
             ImGui.Columns(2, "", false);
 
+            ImGuiEx.Checkbox("Only Nearby Players###onlyNearby", Plugin.Config, nameof(Plugin.Config.OnlyShowNearbyPlayers));
+            if(ImGui.IsItemHovered()) {
+                ImGui.SetTooltip("Only players within range will be visible in the overlay.\nThey will be hidden if too far away or in a different zone.");
+            }
+            ImGui.NextColumn();
             ImGuiEx.DragInt("Max Players###maxPlayers", Plugin.Config, nameof(Plugin.Config.MaxPlayers), 1, 1, 50);
             if(ImGui.IsItemHovered()) {
                 ImGui.SetTooltip("Max number of players to display in the overlay.");
-            }
-            ImGui.NextColumn();
-            ImGuiEx.DragInt("Update Ms###updateMs", Plugin.Config, nameof(Plugin.Config.UpdateMs), 10, 10, 5000);
-            if(ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("Polling rate to check for players targeting you.");
             }
             ImGui.NextColumn();
             ImGuiEx.DragInt("Duration###displayTime", Plugin.Config, nameof(Plugin.Config.DisplayTime), 1, 0, 1440);
@@ -124,7 +124,10 @@ namespace Target {
                 ImGui.SetTooltip("Number of minutes until a name of a player no longer targeting you is removed from the overlay.\nSet to 0 to never automatically remove names.");
             }
             ImGui.NextColumn();
-            ImGui.Dummy(Vector2.Zero);
+            ImGuiEx.DragInt("Update Ms###updateMs", Plugin.Config, nameof(Plugin.Config.UpdateMs), 10, 10, 5000);
+            if(ImGui.IsItemHovered()) {
+                ImGui.SetTooltip("Polling rate to check for players targeting you.");
+            }
             ImGui.NextColumn();
 
             ImGui.Separator();
@@ -154,13 +157,20 @@ namespace Target {
             ImGui.NextColumn();
 
             ImGui.Separator();
-            ImGui.Columns(1, "", false);
+            ImGui.Columns(2, "", false);
 
+            ImGuiEx.Checkbox("Marker Only on Hover", Plugin.Config, nameof(Plugin.Config.OnlyShowMarkerOnHover));
+            if(ImGui.IsItemHovered()) {
+                ImGui.SetTooltip("If enabled, marker on players targeting you will only be visible when you hover over their name in the overlay.");
+            }
+            ImGui.NextColumn();
             ImGuiEx.DragFloat("Marker Size###sizeMarker", Plugin.Config, nameof(Plugin.Config.MarkerSize), 0.05f, 0f, 20f);
             if(ImGui.IsItemHovered()) {
                 ImGui.SetTooltip("Size of the marker on players targeting you.\nSet to 0 to disable.");
             }
             ImGui.NextColumn();
+
+            ImGui.Columns(1, "", false);
             ImGuiEx.ColorEdit4("Marker Colour###colMarker", Plugin.Config, nameof(Plugin.Config.MarkerColour));
             if(ImGui.IsItemHovered()) {
                 ImGui.SetTooltip("Colour of marker on players targeting you.");

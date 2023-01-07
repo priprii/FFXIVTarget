@@ -22,6 +22,7 @@ namespace Target {
         public bool PvEEnemyAlert { get; set; } = false;
         public bool PvPAllyAlert { get; set; } = false;
         public bool PvPEnemyAlert { get; set; } = true;
+        public bool OnlyShowNearbyPlayers { get; set; } = false;
         public int MaxPlayers { get; set; } = 4;
         public int UpdateMs { get; set; } = 250;
         public int DisplayTime { get; set; } = 0;
@@ -30,7 +31,8 @@ namespace Target {
         public float OverlayBGOpacity { get; set; } = 0.5f;
         public float FontScale { get; set; } = 1f;
 
-        public float MarkerSize { get; set; } = 0f;
+        public float MarkerSize { get; set; } = 3f;
+        public bool OnlyShowMarkerOnHover { get; set; } = true;
         public Vector4 MarkerColour { get; set; } = new(255 / 255.0f, 0 / 255.0f, 0 / 255.0f, 0.8f);
 
         public Vector4 TargetColour { get; set; } = new(220 / 255.0f, 220 / 255.0f, 220 / 255.0f, 0.8f);

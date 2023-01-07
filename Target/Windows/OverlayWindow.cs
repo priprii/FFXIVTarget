@@ -50,15 +50,18 @@ namespace Target {
                             if(o.ObjectKind != Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player && o.ObjectKind != Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc) { continue; }
                             if(o.Name.TextValue == p.Name) { pO = o; break; }
                         }
-                        if(pO == null) { continue; }
+                        if(pO == null && Plugin.Config.OnlyShowNearbyPlayers) { continue; }
 
                         ImGui.SetWindowFontScale(Plugin.Config.FontScale);
                         ImGui.TextColored(pO != null && pO.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId ? Plugin.Config.TargetColour : Plugin.Config.NoTargetColour, $"[{p.TargetTime.Hour.ToString("00")}:{p.TargetTime.Minute.ToString("00")}] {p.Name}");
 
-                        if(Plugin.Config.MarkerSize > 0f && pO.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player && pO != null && pO.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId) {
-                            if(pO is PlayerCharacter pc) {
-                                if(!pc.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile)) {
-                                    MarkPlayer(pO, Plugin.Config.MarkerColour, Plugin.Config.MarkerSize);
+                        if(pO != null && Plugin.Config.MarkerSize > 0f && pO.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) {
+                            bool isHovered = ImGui.IsItemHovered();
+                            if((isHovered && Plugin.Config.OnlyShowMarkerOnHover) || (!Plugin.Config.OnlyShowMarkerOnHover && pO.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId)) {
+                                if(pO is PlayerCharacter pc) {
+                                    if(!pc.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile)) {
+                                        MarkPlayer(pO, Plugin.Config.MarkerColour, Plugin.Config.MarkerSize);
+                                    }
                                 }
                             }
                         }
