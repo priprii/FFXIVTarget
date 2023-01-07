@@ -8,13 +8,18 @@ using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Types;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using XivCommon;
+using Dalamud.Game.Gui;
+using Lumina.Excel;
+using Lumina.Excel.GeneratedSheets;
+using System.Linq;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 
 namespace Target {
     public sealed class Plugin : IDalamudPlugin {
         public string Name => "Target";
         private const string CommandName = "/tar";
+        private const string AltCommandName = "/targetpyon";
 
         [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; } = null!;
         [PluginService] public static CommandManager CommandManager { get; private set; } = null!;
@@ -22,18 +27,30 @@ namespace Target {
         [PluginService] public static Framework Framework { get; private set; } = null!;
         [PluginService] public static ObjectTable Objects { get; private set; } = null!;
         [PluginService] public static TargetManager Targets { get; private set; } = null!;
+        [PluginService] public static ChatGui ChatGui { get; private set; } = null!;
+        [PluginService] public static GameGui GameGui { get; private set; } = null!;
 
         public static Config Config { get; set; }
-        private static XivCommonBase XIVCommon;
+        public static XivCommonBase XIVCommon;
         private WindowSystem Windows;
         private static MainWindow MainWindow;
         public static OverlayWindow OverlayWindow;
         private DateTime LastUpdateTime = DateTime.Now;
+        private readonly ExcelSheet<ContentFinderCondition> ContentFinderConditionsSheet;
+        public ContentTypes ContentType = ContentTypes.NoDuty;
+        public enum ContentTypes {
+            NoDuty,
+            PvEDuty,
+            PvPDuty
+        }
 
         public List<Player> TargetList = new List<Player>();
 
         public Plugin() {
             CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand) {
+                HelpMessage = "Open Target Interface."
+            });
+            CommandManager.AddHandler(AltCommandName, new CommandInfo(OnCommand) {
                 HelpMessage = "Open Target Interface."
             });
 
@@ -52,8 +69,30 @@ namespace Target {
             Windows.AddWindow(OverlayWindow);
 
             PluginInterface.UiBuilder.Draw += Windows.Draw;
-
             Framework.Update += Framework_Update;
+            ChatGui.ChatMessage += OnChatMessage;
+            ClientState.TerritoryChanged += OnTerritoryChanged;
+        }
+
+        private void OnTerritoryChanged(object? sender, ushort e) {
+            ContentFinderCondition content = ContentFinderConditionsSheet.FirstOrDefault(c => c.TerritoryType.Row == ClientState.TerritoryType);
+            if(content == null) {
+                ContentType = ContentTypes.NoDuty;
+            } else {
+                if(content.PvP) {
+                    ContentType = ContentTypes.PvPDuty;
+                } else {
+                    ContentType = ContentTypes.PvEDuty;
+                }
+            }
+        }
+
+        private void OnChatMessage(Dalamud.Game.Text.XivChatType type, uint senderId, ref Dalamud.Game.Text.SeStringHandling.SeString sender, ref Dalamud.Game.Text.SeStringHandling.SeString message, ref bool isHandled) {
+            if(isHandled || !Config.Enabled || ClientState.LocalPlayer == null) { return; }
+
+            if(message.TextValue.Contains("[TargetPyon]")) {
+                isHandled = true;
+            }
         }
 
         private unsafe void Framework_Update(Framework framework) {
@@ -63,17 +102,35 @@ namespace Target {
 
                     if(!OverlayWindow.IsOpen) { OverlayWindow.IsOpen = true; }
                     foreach(GameObject o in Objects) {
-                        if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) {
-                            if(o.TargetObjectId == ClientState.LocalPlayer.ObjectId) {
+                        if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player || o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc) {
+                            if(o.TargetObjectId == ClientState.LocalPlayer.ObjectId && o.Name.TextValue != ClientState.LocalPlayer.Name.TextValue) {
+                                bool playSound = false;
+                                if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) {
+                                    if(ContentType == ContentTypes.PvPDuty) {
+                                        bool isEnemy = false;
+                                        if(o is PlayerCharacter p) {
+                                            isEnemy = p.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile);
+                                        }
+                                        playSound = (isEnemy && Config.PvPEnemyAlert) || (!isEnemy && Config.PvPAllyAlert);
+                                    } else {
+                                        playSound = (ContentType == ContentTypes.PvEDuty && Config.PvEAllyAlert) || (ContentType == ContentTypes.NoDuty && Config.NoDutyAllyAlert);
+                                    }
+                                } else if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc) {
+                                    if(ContentType == ContentTypes.PvPDuty || (ContentType == ContentTypes.NoDuty && !Config.NoDutyEnemyAlert) || (ContentType == ContentTypes.PvEDuty && !Config.PvEEnemyAlert)) {
+                                        continue;
+                                    }
+                                    playSound = true;
+                                }
+
                                 Player? tlP = TargetList.Find(x => x.Name == o.Name.TextValue);
                                 if(tlP != null) {
-                                    if(tlP.TargetTime.AddSeconds(10) < DateTime.Now) {
-                                        PlaySound(tlP.Name);
+                                    if(tlP.TargetTime.AddSeconds(10) < DateTime.Now && playSound) {
+                                        PlaySound(Config.SoundID);
                                     }
                                     tlP.TargetTime = DateTime.Now;
                                 } else {
                                     tlP = new Player(o.Name.TextValue);
-                                    PlaySound(tlP.Name);
+                                    if(playSound) { PlaySound(Config.SoundID); }
                                     if(TargetList.Count + 1 > Config.MaxPlayers) { try { TargetList.RemoveAt(TargetList.Count - 1); } catch { } }
                                     TargetList.Add(tlP);
                                 }
@@ -81,18 +138,26 @@ namespace Target {
                             }
                         }
                     }
+
+                    if(Config.DisplayTime != 0) {
+                        TargetList.RemoveAll(x => x.TargetTime.AddMinutes(Config.DisplayTime) < DateTime.Now);
+                    }
                 }
             }
         }
 
-        private void PlaySound(string name) {
-            XIVCommon.Functions.Chat.SendMessage($"/echo Targeted by {name} <se.16>");
+        public void PlaySound(int soundID) {
+            if(soundID == 0 || soundID > 16) { return; }
+            XIVCommon.Functions.Chat.SendMessage($"/echo [TargetPyon] <se.{soundID}>");
         }
 
         public void Dispose() {
+            ClientState.TerritoryChanged -= OnTerritoryChanged;
+            ChatGui.ChatMessage -= OnChatMessage;
             Framework.Update -= Framework_Update;
             PluginInterface.UiBuilder.Draw -= Windows.Draw;
             CommandManager.RemoveHandler(CommandName);
+            CommandManager.RemoveHandler(AltCommandName);
             XIVCommon.Dispose();
         }
 

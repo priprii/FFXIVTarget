@@ -1,6 +1,11 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
 
 namespace Target {
@@ -30,6 +35,7 @@ namespace Target {
         }
 
         public override void Draw() {
+            //todo: Conditions
             if(Plugin.Config.Enabled && Plugin.ClientState.LocalPlayer != null) {
                 Flags = AutoResize;
                 if(Plugin.Config.LockPosition) { Flags |= ImGuiWindowFlags.NoMove; }
@@ -41,21 +47,44 @@ namespace Target {
                     foreach(Player p in plugin.TargetList) {
                         GameObject pO = null;
                         foreach(GameObject o in Plugin.Objects) {
-                            if(o.ObjectKind != Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) { continue; }
+                            if(o.ObjectKind != Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player && o.ObjectKind != Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc) { continue; }
                             if(o.Name.TextValue == p.Name) { pO = o; break; }
                         }
+                        if(pO == null) { continue; }
+
                         ImGui.SetWindowFontScale(Plugin.Config.FontScale);
                         ImGui.TextColored(pO != null && pO.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId ? Plugin.Config.TargetColour : Plugin.Config.NoTargetColour, $"[{p.TargetTime.Hour.ToString("00")}:{p.TargetTime.Minute.ToString("00")}] {p.Name}");
+
+                        if(Plugin.Config.MarkerSize > 0f && pO.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player && pO != null && pO.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId) {
+                            if(pO is PlayerCharacter pc) {
+                                if(!pc.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile)) {
+                                    MarkPlayer(pO, Plugin.Config.MarkerColour, Plugin.Config.MarkerSize);
+                                }
+                            }
+                        }
+
                         if(Plugin.Config.LClickTarget && pO != null && ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
                             Plugin.Targets.Target = pO;
                         } else if(Plugin.Config.RClickRemove && ImGui.IsItemClicked(ImGuiMouseButton.Right)) {
                             plugin.TargetList.Remove(p);
+                        } else if(Plugin.Config.MClickInspect && pO != null && ImGui.IsItemClicked(ImGuiMouseButton.Middle)) {
+                            Plugin.Targets.MouseOverTarget = pO;
+                            Plugin.XIVCommon.Functions.Chat.SendMessage($"/check <mo>");
                         }
                     }
                 } catch { }
 
                 ImGui.Spacing();
             }
+        }
+
+        private void MarkPlayer(GameObject? player, Vector4 colour, float size) {
+            if(player == null) { return; }
+            if(!Plugin.GameGui.WorldToScreen(player.Position, out var screenPos)) { return; }
+
+            ImGui.PushClipRect(ImGuiHelpers.MainViewport.Pos, ImGuiHelpers.MainViewport.Pos + ImGuiHelpers.MainViewport.Size, false);
+            ImGui.GetWindowDrawList().AddCircleFilled(ImGuiHelpers.MainViewport.Pos + new Vector2(screenPos.X, screenPos.Y), size, ImGui.GetColorU32(colour), 100);
+            ImGui.PopClipRect();
         }
 
         public override void PostDraw() {
