@@ -5,14 +5,14 @@
   "Description": "Track who is targeting you in an overlay list.",
   "Changelog": "",
   "InternalName": "Target",
-  "AssemblyVersion": "1.0.0.4",
+  "AssemblyVersion": "1.0.0.5",
   "RepoUrl": "https://github.com/priprii/FFXIVTarget",
   "ApplicableVersion": "any",
   "Tags": [
     "target",
     "pyon"
   ],
-  "DalamudApiLevel": 7,
+  "DalamudApiLevel": 8,
   "DownloadLinkInstall": "https://github.com/priprii/FFXIVTarget/raw/main/bin/Target.zip",
   "DownloadLinkTesting": "https://github.com/priprii/FFXIVTarget/raw/main/bin/Target.zip",
   "DownloadLinkUpdate": "https://github.com/priprii/FFXIVTarget/raw/main/bin/Target.zip"
