@@ -72,7 +72,7 @@ namespace Target {
                             plugin.TargetList.Remove(p);
                         } else if(Plugin.Config.MClickInspect && pO != null && ImGui.IsItemClicked(ImGuiMouseButton.Middle)) {
                             Plugin.Targets.MouseOverTarget = pO;
-                            Plugin.XIVCommon.Functions.Chat.SendMessage($"/check <mo>");
+                            Plugin.Chat.SendMessage($"/check <mo>");
                         }
                     }
                 } catch { }

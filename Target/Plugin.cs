@@ -8,7 +8,6 @@ using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Types;
 using System;
 using System.Collections.Generic;
-using XivCommon;
 using Dalamud.Game.Gui;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
@@ -29,9 +28,10 @@ namespace Target {
         [PluginService] public static TargetManager Targets { get; private set; } = null!;
         [PluginService] public static ChatGui ChatGui { get; private set; } = null!;
         [PluginService] public static GameGui GameGui { get; private set; } = null!;
+        [PluginService] public static SigScanner SigScanner { get; private set; } = null!;
 
         public static Config Config { get; set; }
-        public static XivCommonBase XIVCommon;
+        public static Chat Chat;
         private WindowSystem Windows;
         private static MainWindow MainWindow;
         public static OverlayWindow OverlayWindow;
@@ -61,7 +61,7 @@ namespace Target {
             Config = PluginInterface.GetPluginConfig() as Config ?? new Config();
             Config.Initialize(PluginInterface);
 
-            XIVCommon = new XivCommonBase();
+            Chat = new Chat(SigScanner);
             Windows = new WindowSystem(Name);
             MainWindow = new MainWindow(this) { IsOpen = false };
             OverlayWindow = new OverlayWindow(this) { IsOpen = false };
@@ -149,7 +149,7 @@ namespace Target {
 
         public void PlaySound(int soundID) {
             if(soundID == 0 || soundID > 16) { return; }
-            XIVCommon.Functions.Chat.SendMessage($"/echo [TargetPyon] <se.{soundID}>");
+            Chat.SendMessage($"/echo [TargetPyon] <se.{soundID}>");
         }
 
         public void Dispose() {
@@ -159,7 +159,6 @@ namespace Target {
             PluginInterface.UiBuilder.Draw -= Windows.Draw;
             CommandManager.RemoveHandler(CommandName);
             CommandManager.RemoveHandler(AltCommandName);
-            XIVCommon.Dispose();
         }
 
         private void OnCommand(string command, string args) {
