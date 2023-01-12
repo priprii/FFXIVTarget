@@ -15,6 +15,7 @@ namespace Target {
         public bool LClickTarget { get; set; } = true;
         public bool RClickRemove { get; set; } = true;
         public bool MClickInspect { get; set; } = true;
+        public bool ChatAlert { get; set; } = false;
         public int SoundID { get; set; } = 16;
         public bool NoDutyAllyAlert { get; set; } = true;
         public bool NoDutyEnemyAlert { get; set; } = false;

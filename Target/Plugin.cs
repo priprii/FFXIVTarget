@@ -126,12 +126,12 @@ namespace Target {
                                 Player? tlP = TargetList.Find(x => x.Name == o.Name.TextValue);
                                 if(tlP != null) {
                                     if(tlP.TargetTime.AddSeconds(10) < DateTime.Now && playSound) {
-                                        PlaySound(Config.SoundID);
+                                        PlaySound(tlP.Name, Config.SoundID);
                                     }
                                     tlP.TargetTime = DateTime.Now;
                                 } else {
                                     tlP = new Player(o.Name.TextValue);
-                                    if(playSound) { PlaySound(Config.SoundID); }
+                                    if(playSound) { PlaySound(tlP.Name, Config.SoundID); }
                                     if(TargetList.Count + 1 > Config.MaxPlayers) { try { TargetList.RemoveAt(TargetList.Count - 1); } catch { } }
                                     TargetList.Add(tlP);
                                 }
@@ -147,9 +147,13 @@ namespace Target {
             }
         }
 
-        public void PlaySound(int soundID) {
-            if(soundID == 0 || soundID > 16) { return; }
-            Chat.SendMessage($"/echo [TargetPyon] <se.{soundID}>");
+        public void PlaySound(string name, int soundID) {
+            if(soundID > 0 && soundID <= 16) {
+                Chat.SendMessage($"/echo [TargetPyon] <se.{soundID}>");
+            }
+            if(name != "" && Config.ChatAlert && ContentType != ContentTypes.PvPDuty) {
+                Chat.SendMessage($"/echo Targeted by {name}");
+            }
         }
 
         public void Dispose() {

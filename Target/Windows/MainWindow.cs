@@ -63,13 +63,16 @@ namespace Target {
                 } else if(Plugin.Config.SoundID > 16) {
                     Plugin.Config.SoundID = 16;
                 }
-                plugin.PlaySound(Plugin.Config.SoundID);
+                plugin.PlaySound("", Plugin.Config.SoundID);
             }
             if(ImGui.IsItemHovered()) {
                 ImGui.SetTooltip("The audio alert to play when being targeted.\nSet to 0 to disable audio.");
             }
             ImGui.NextColumn();
-            ImGui.Dummy(Vector2.Zero);
+            ImGuiEx.Checkbox("Chat Alert###chatAlert", Plugin.Config, nameof(Plugin.Config.ChatAlert));
+            if(ImGui.IsItemHovered()) {
+                ImGui.SetTooltip("Output a message to the chatlog when being targeted.\nThis option is ignored in PvP duties.");
+            }
             ImGui.NextColumn();
             ImGui.Dummy(Vector2.Zero);
             ImGui.NextColumn();
