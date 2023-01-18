@@ -103,39 +103,33 @@ namespace Target {
 
                     if(!OverlayWindow.IsOpen) { OverlayWindow.IsOpen = true; }
                     foreach(GameObject o in Objects) {
-                        if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player || o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc) {
-                            if(o.TargetObjectId == ClientState.LocalPlayer.ObjectId && o.Name.TextValue != ClientState.LocalPlayer.Name.TextValue) {
-                                bool playSound = false;
-                                if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) {
-                                    if(ContentType == ContentTypes.PvPDuty) {
-                                        bool isEnemy = false;
-                                        if(o is PlayerCharacter p) {
-                                            isEnemy = p.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile);
-                                        }
-                                        playSound = (isEnemy && Config.PvPEnemyAlert) || (!isEnemy && Config.PvPAllyAlert);
-                                    } else {
-                                        playSound = (ContentType == ContentTypes.PvEDuty && Config.PvEAllyAlert) || (ContentType == ContentTypes.NoDuty && Config.NoDutyAllyAlert);
-                                    }
-                                } else if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc) {
-                                    if(ContentType == ContentTypes.PvPDuty || (ContentType == ContentTypes.NoDuty && !Config.NoDutyEnemyAlert) || (ContentType == ContentTypes.PvEDuty && !Config.PvEEnemyAlert)) {
-                                        continue;
-                                    }
-                                    playSound = true;
-                                }
+                        if(o.Name.TextValue != ClientState.LocalPlayer.Name.TextValue && (o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player || o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc)) {
+                            if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc && (ContentType == ContentTypes.PvPDuty || (ContentType == ContentTypes.NoDuty && !Config.NoDutyEnemyAlert) || (ContentType == ContentTypes.PvEDuty && !Config.PvEEnemyAlert))) {
+                                continue;
+                            }
+
+                            if(o.TargetObjectId == ClientState.LocalPlayer.ObjectId) {
+                                bool playSound = CanPlaySound(o);
 
                                 Player? tlP = TargetList.Find(x => x.Name == o.Name.TextValue);
                                 if(tlP != null) {
-                                    if(tlP.TargetTime.AddSeconds(10) < DateTime.Now && playSound) {
-                                        PlaySound(tlP.Name, Config.SoundID);
+                                    if(playSound && tlP.TargetTime.AddSeconds(10) < DateTime.Now) {
+                                        PlaySound(tlP.Name);
                                     }
                                     tlP.TargetTime = DateTime.Now;
                                 } else {
                                     tlP = new Player(o.Name.TextValue);
-                                    if(playSound) { PlaySound(tlP.Name, Config.SoundID); }
+                                    if(playSound) { PlaySound(tlP.Name); }
                                     if(TargetList.Count + 1 > Config.MaxPlayers) { try { TargetList.RemoveAt(TargetList.Count - 1); } catch { } }
                                     TargetList.Add(tlP);
                                 }
+                                tlP.Object = o;
                                 TargetList.Sort((x, y) => y.TargetTime.CompareTo(x.TargetTime));
+                            } else {
+                                Player? tlP = TargetList.Find(x => x.Name == o.Name.TextValue);
+                                if(tlP != null) {
+                                    tlP.Object = o;
+                                }
                             }
                         }
                     }
@@ -147,9 +141,28 @@ namespace Target {
             }
         }
 
-        public void PlaySound(string name, int soundID) {
-            if(soundID > 0 && soundID <= 16) {
-                Chat.SendMessage($"/echo [TargetPyon] <se.{soundID}>");
+        private bool CanPlaySound(GameObject o) {
+            if(o.TargetObjectId == ClientState.LocalPlayer.ObjectId) {
+                if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) {
+                    if(ContentType == ContentTypes.PvPDuty) {
+                        bool isEnemy = false;
+                        if(o is PlayerCharacter p) {
+                            isEnemy = p.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile);
+                        }
+                        return (isEnemy && Config.PvPEnemyAlert) || (!isEnemy && Config.PvPAllyAlert);
+                    } else {
+                        return (ContentType == ContentTypes.PvEDuty && Config.PvEAllyAlert) || (ContentType == ContentTypes.NoDuty && Config.NoDutyAllyAlert);
+                    }
+                } else if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void PlaySound(string name) {
+            if(Config.SoundID > 0 && Config.SoundID <= 16) {
+                Chat.SendMessage($"/echo [TargetPyon] <se.{Config.SoundID}>");
             }
             if(name != "" && Config.ChatAlert && ContentType != ContentTypes.PvPDuty) {
                 Chat.SendMessage($"/echo Targeted by {name}");

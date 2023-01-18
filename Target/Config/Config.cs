@@ -24,6 +24,8 @@ namespace Target {
         public bool PvPAllyAlert { get; set; } = false;
         public bool PvPEnemyAlert { get; set; } = true;
         public bool OnlyShowNearbyPlayers { get; set; } = false;
+        public int ShowTarget { get; set; } = 0;
+        public int ShowTargeters { get; set; } = 0;
         public int MaxPlayers { get; set; } = 4;
         public int UpdateMs { get; set; } = 250;
         public int DisplayTime { get; set; } = 0;

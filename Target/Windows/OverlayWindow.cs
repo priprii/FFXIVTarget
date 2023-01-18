@@ -9,6 +9,10 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.Interop;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Target {
     public class OverlayWindow : Window {
@@ -37,7 +41,6 @@ namespace Target {
         }
 
         public unsafe override void Draw() {
-            //todo: Conditions
             if(Plugin.Config.Enabled && Plugin.ClientState.LocalPlayer != null) {
                 Flags = AutoResize;
                 if(Plugin.Config.LockPosition) { Flags |= ImGuiWindowFlags.NoMove; }
@@ -47,39 +50,51 @@ namespace Target {
                 if(plugin.TargetList.Count == 0) { return; }
                 try {
                     foreach(Player p in plugin.TargetList) {
-                        GameObject pO = null;
-                        foreach(GameObject o in Plugin.Objects) {
-                            if(o.ObjectKind != Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player && o.ObjectKind != Dalamud.Game.ClientState.Objects.Enums.ObjectKind.BattleNpc) { continue; }
-                            if(o.Name.TextValue == p.Name) { pO = o; break; }
-                        }
-                        if(pO == null && Plugin.Config.OnlyShowNearbyPlayers) { continue; }
+                        if(Plugin.Config.OnlyShowNearbyPlayers && !p.Exists) { continue; }
 
                         ImGui.SetWindowFontScale(Plugin.Config.FontScale);
-                        ImGui.TextColored(pO != null && pO.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId ? Plugin.Config.TargetColour : Plugin.Config.NoTargetColour, $"[{p.TargetTime.Hour.ToString("00")}:{p.TargetTime.Minute.ToString("00")}] {p.Name}");
+                        ImGui.TextColored(p.Exists && p.Object?.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId ? Plugin.Config.TargetColour : Plugin.Config.NoTargetColour, $"[{p.TargetTime.Hour.ToString("00")}:{p.TargetTime.Minute.ToString("00")}] {p.Name}");
 
-                        if(pO != null && Plugin.Config.MarkerSize > 0f && pO.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) {
-                            bool isHovered = ImGui.IsItemHovered();
-                            if((isHovered && Plugin.Config.OnlyShowMarkerOnHover) || (!Plugin.Config.OnlyShowMarkerOnHover && pO.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId)) {
-                                if(pO is PlayerCharacter pc) {
-                                    if(!pc.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.Hostile)) {
-                                        MarkPlayer(pO, Plugin.Config.MarkerColour, Plugin.Config.MarkerSize);
+                        if(Plugin.Config.RClickRemove && ImGui.IsItemClicked(ImGuiMouseButton.Right)) {
+                            plugin.TargetList.Remove(p);
+                        } else if(p.Exists) {
+                            HandleOverlayItemInteractions(p.Object);
+
+                            if(p.Object.ObjectKind == ObjectKind.Player) {
+                                string tTooltip = "";
+
+                                if(Plugin.Config.ShowTarget > 0 && p.TargetExists && p.Object.TargetObjectId != Plugin.ClientState.LocalPlayer?.ObjectId && p.Object?.TargetObject?.ObjectKind == ObjectKind.Player) {
+                                    if(Plugin.Config.ShowTarget == 1) {
+                                        ImGui.Indent(30 * ImGuiHelpers.GlobalScale);
+
+                                        ImGui.TextColored(p.Object?.TargetObject?.TargetObject != null && p.Object?.TargetObject?.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId ? Plugin.Config.TargetColour : Plugin.Config.NoTargetColour, $"→{p.Object?.TargetObject?.Name.TextValue}");
+                                        HandleOverlayItemInteractions(p.Object?.TargetObject);
+
+                                        ImGui.Indent(-30 * ImGuiHelpers.GlobalScale);
+                                    } else if(ImGui.IsItemHovered()) {
+                                        tTooltip = $"Targeting: {p.Object?.TargetObject?.Name.TextValue}";
                                     }
                                 }
-                            }
-                        }
+                                
+                                if(Plugin.Config.ShowTargeters > 0) {
+                                    IEnumerable<GameObject> objs = Plugin.Objects.Where(o => o.Name.TextValue != Plugin.ClientState.LocalPlayer?.Name.TextValue && o.ObjectKind == ObjectKind.Player && o.TargetObjectId == p.Object?.ObjectId);
+                                    if(objs != null && objs.Count() > 0) {
+                                        if(Plugin.Config.ShowTargeters == 1) {
+                                            ImGui.Indent(30 * ImGuiHelpers.GlobalScale);
+                                            foreach(GameObject o in objs) {
+                                                ImGui.TextColored(Plugin.Config.NoTargetColour, $"←{o.Name.TextValue}");
+                                                HandleOverlayItemInteractions(p.Object?.TargetObject);
+                                            }
+                                            ImGui.Indent(-30 * ImGuiHelpers.GlobalScale);
+                                        } else if(ImGui.IsItemHovered()) {
+                                            if(tTooltip != "") { tTooltip += "\n"; }
+                                            tTooltip += $"Targeted By:\n{string.Join('\n', objs.Select(x => x.Name.TextValue))}";
+                                        }
+                                    }
+                                }
 
-                        if(Plugin.Config.LClickTarget && pO != null && ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
-                            Plugin.Targets.Target = pO;
-                        } else if(Plugin.Config.RClickRemove && ImGui.IsItemClicked(ImGuiMouseButton.Right)) {
-                            plugin.TargetList.Remove(p);
-                        } else if(Plugin.Config.MClickInspect && pO != null && ImGui.IsItemClicked(ImGuiMouseButton.Middle)) {
-                            if(Input.IsCtrlDown) {
-                                Plugin.Targets.MouseOverTarget = pO;
-                                Plugin.Chat.SendMessage($"/check <mo>");
-                            } else {
-                                FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* objAddr = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)pO.Address;
-                                if(objAddr != null && objAddr->ObjectKind == 1 && objAddr->SubKind == 4) {
-                                    AgentCharaCard.Instance()->OpenCharaCard(objAddr);
+                                if(tTooltip != "") {
+                                    ImGui.SetTooltip(tTooltip);
                                 }
                             }
                         }
@@ -87,6 +102,35 @@ namespace Target {
                 } catch { }
 
                 ImGui.Spacing();
+            }
+        }
+
+        private unsafe void HandleOverlayItemInteractions(GameObject o) {
+            if(o == null || !o.IsValid()) { return; }
+
+            if(Plugin.Config.MarkerSize > 0f && o.ObjectKind == ObjectKind.Player) {
+                bool isHovered = ImGui.IsItemHovered();
+                if((isHovered && Plugin.Config.OnlyShowMarkerOnHover) || (!Plugin.Config.OnlyShowMarkerOnHover && o.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId)) {
+                    if(o is PlayerCharacter pc) {
+                        if(!pc.StatusFlags.HasFlag(StatusFlags.Hostile)) {
+                            MarkPlayer(o, Plugin.Config.MarkerColour, Plugin.Config.MarkerSize);
+                        }
+                    }
+                }
+            }
+
+            if(Plugin.Config.LClickTarget && ImGui.IsItemClicked(ImGuiMouseButton.Left)) {
+                Plugin.Targets.Target = o;
+            } else if(Plugin.Config.MClickInspect && ImGui.IsItemClicked(ImGuiMouseButton.Middle) && o.ObjectKind == ObjectKind.Player) {
+                if(Input.IsCtrlDown) {
+                    Plugin.Targets.MouseOverTarget = o;
+                    Plugin.Chat.SendMessage($"/check <mo>");
+                } else {
+                    FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* objAddr = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)o.Address;
+                    if(objAddr != null && objAddr->ObjectKind == 1 && objAddr->SubKind == 4) {
+                        AgentCharaCard.Instance()->OpenCharaCard(objAddr);
+                    }
+                }
             }
         }
 
