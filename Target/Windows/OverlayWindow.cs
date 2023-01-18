@@ -6,7 +6,9 @@ using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.Interop;
 using ImGuiNET;
+using Lumina.Excel.GeneratedSheets;
 
 namespace Target {
     public class OverlayWindow : Window {
@@ -34,7 +36,7 @@ namespace Target {
             ImGui.PushStyleColor(ImGuiCol.Border, new Vector4(borderColor.X, borderColor.Y, borderColor.Z, Plugin.Config.OverlayBGOpacity));
         }
 
-        public override void Draw() {
+        public unsafe override void Draw() {
             //todo: Conditions
             if(Plugin.Config.Enabled && Plugin.ClientState.LocalPlayer != null) {
                 Flags = AutoResize;
@@ -71,8 +73,15 @@ namespace Target {
                         } else if(Plugin.Config.RClickRemove && ImGui.IsItemClicked(ImGuiMouseButton.Right)) {
                             plugin.TargetList.Remove(p);
                         } else if(Plugin.Config.MClickInspect && pO != null && ImGui.IsItemClicked(ImGuiMouseButton.Middle)) {
-                            Plugin.Targets.MouseOverTarget = pO;
-                            Plugin.Chat.SendMessage($"/check <mo>");
+                            if(Input.IsCtrlDown) {
+                                Plugin.Targets.MouseOverTarget = pO;
+                                Plugin.Chat.SendMessage($"/check <mo>");
+                            } else {
+                                FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* objAddr = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)pO.Address;
+                                if(objAddr != null && objAddr->ObjectKind == 1 && objAddr->SubKind == 4) {
+                                    AgentCharaCard.Instance()->OpenCharaCard(objAddr);
+                                }
+                            }
                         }
                     }
                 } catch { }

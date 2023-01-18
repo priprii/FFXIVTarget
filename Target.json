@@ -5,7 +5,7 @@
   "Description": "Track who is targeting you in an overlay list.",
   "Changelog": "",
   "InternalName": "Target",
-  "AssemblyVersion": "1.0.0.6",
+  "AssemblyVersion": "1.0.0.7",
   "RepoUrl": "https://github.com/priprii/FFXIVTarget",
   "ApplicableVersion": "any",
   "Tags": [

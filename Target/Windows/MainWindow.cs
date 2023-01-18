@@ -50,7 +50,7 @@ namespace Target {
             ImGui.NextColumn();
             ImGuiEx.Checkbox("MClick: Inspect###mClick", Plugin.Config, nameof(Plugin.Config.MClickInspect));
             if(ImGui.IsItemHovered()) {
-                ImGui.SetTooltip("Middle-click name in overlay to inspect.\n(ClickThrough must be disabled)");
+                ImGui.SetTooltip("Middle-click name in overlay to open adventure plate.\nCtrl+Middle-click to open character window.\n(ClickThrough must be disabled)");
             }
             ImGui.NextColumn();
 
