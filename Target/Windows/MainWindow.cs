@@ -307,7 +307,7 @@ namespace Target {
             objs.Sort((x, y) => x.Name.TextValue.CompareTo(y.Name.TextValue));
 
             foreach(Dalamud.Game.ClientState.Objects.Types.GameObject o in objs) {
-                if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player && !string.IsNullOrEmpty(o.Name.TextValue)) {
+                if(!string.IsNullOrEmpty(o.Name.TextValue)) { //o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player
                     GameObject* gameObject = (GameObject*)o.Address;
 
                     ImGui.SetNextItemWidth(-1);
@@ -322,13 +322,16 @@ namespace Target {
                             HideGameObject(gameObject);
                         } else {
                             ShowGameObject(gameObject);
+                            
                         }
                     }
                     if(ImGui.IsItemHovered()) { ImGui.SetTooltip("Toggle visibility of this player.\nNote: This is only temporary, hidden players will be visible again if they reload into same zone as you."); }
                     ImGui.NextColumn();
 
                     ImGui.SetNextItemWidth(-1);
-                    ImGui.Text($"{(o.TargetObject != null && o.TargetObject.IsValid() ? $"{o.TargetObject.Name.TextValue}" : "")}");
+                    if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) {
+                        ImGui.Text($"{(o.TargetObject != null && o.TargetObject.IsValid() ? $"{o.TargetObject.Name.TextValue}" : "")}");
+                    }
                     ImGui.NextColumn();
 
                     ImGui.SetNextItemWidth(-1);
@@ -339,20 +342,24 @@ namespace Target {
                     ImGui.NextColumn();
 
                     ImGui.SetNextItemWidth(-1);
-                    if(ImGui.Button($"Plate##pBtn{o.ObjectId}")) {
-                        if(gameObject != null && gameObject->ObjectKind == 1 && gameObject->SubKind == 4) {
-                            AgentCharaCard.Instance()->OpenCharaCard(gameObject);
+                    if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) {
+                        if(ImGui.Button($"Plate##pBtn{o.ObjectId}")) {
+                            if(gameObject != null && gameObject->ObjectKind == 1 && gameObject->SubKind == 4) {
+                                AgentCharaCard.Instance()->OpenCharaCard(gameObject);
+                            }
                         }
+                        if(ImGui.IsItemHovered()) { ImGui.SetTooltip("Open this player's Adventure Plate."); }
                     }
-                    if(ImGui.IsItemHovered()) { ImGui.SetTooltip("Open this player's Adventure Plate."); }
                     ImGui.NextColumn();
 
                     ImGui.SetNextItemWidth(-1);
-                    if(ImGui.Button($"Inspect##iBtn{o.ObjectId}")) {
-                        Plugin.Targets.MouseOverTarget = o;
-                        Plugin.Chat.SendMessage($"/check <mo>");
+                    if(o.ObjectKind == Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Player) {
+                        if(ImGui.Button($"Inspect##iBtn{o.ObjectId}")) {
+                            Plugin.Targets.MouseOverTarget = o;
+                            Plugin.Chat.SendMessage($"/check <mo>");
+                        }
+                        if(ImGui.IsItemHovered()) { ImGui.SetTooltip("Inspect this player."); }
                     }
-                    if(ImGui.IsItemHovered()) { ImGui.SetTooltip("Inspect this player."); }
                     ImGui.NextColumn();
                 }
             }
@@ -377,12 +384,14 @@ namespace Target {
         }
         private unsafe void HideGameObject(GameObject* thisPtr) {
             if(IsVisible(thisPtr)) {
+                thisPtr->DisableDraw();
                 thisPtr->RenderFlags |= (int)VisibilityFlags.Invisible;
             }
         }
         private unsafe void ShowGameObject(GameObject* thisPtr) {
             if(!IsVisible(thisPtr)) {
                 thisPtr->RenderFlags &= ~(int)VisibilityFlags.Invisible;
+                thisPtr->EnableDraw();
             }
         }
     }

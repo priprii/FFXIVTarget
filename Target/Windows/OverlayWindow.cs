@@ -67,7 +67,8 @@ namespace Target {
                                     if(Plugin.Config.ShowTarget == 1) {
                                         ImGui.Indent(30 * ImGuiHelpers.GlobalScale);
 
-                                        ImGui.TextColored(p.Object?.TargetObject?.TargetObject != null && p.Object?.TargetObject?.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId ? Plugin.Config.TargetColour : Plugin.Config.NoTargetColour, $"→{p.Object?.TargetObject?.Name.TextValue}");
+                                        string dir = p.Object?.TargetObject?.TargetObjectId == p.Object?.ObjectId ? "⇔" : "→";
+                                        ImGui.TextColored(p.Object?.TargetObject?.TargetObject != null && p.Object?.TargetObject?.TargetObjectId == Plugin.ClientState.LocalPlayer?.ObjectId ? Plugin.Config.TargetColour : Plugin.Config.NoTargetColour, $"{dir}{p.Object?.TargetObject?.Name.TextValue}");
                                         HandleOverlayItemInteractions(p.Object?.TargetObject);
 
                                         ImGui.Indent(-30 * ImGuiHelpers.GlobalScale);
@@ -82,8 +83,11 @@ namespace Target {
                                         if(Plugin.Config.ShowTargeters == 1) {
                                             ImGui.Indent(30 * ImGuiHelpers.GlobalScale);
                                             foreach(GameObject o in objs) {
-                                                ImGui.TextColored(Plugin.Config.NoTargetColour, $"←{o.Name.TextValue}");
-                                                HandleOverlayItemInteractions(p.Object?.TargetObject);
+                                                if(p.Object?.TargetObjectId != o.ObjectId || Plugin.Config.ShowTarget != 1) {
+                                                    string dir = p.Object?.TargetObjectId == o.ObjectId ? "⇔" : "←";
+                                                    ImGui.TextColored(Plugin.Config.NoTargetColour, $"{dir}{o.Name.TextValue}");
+                                                    HandleOverlayItemInteractions(p.Object?.TargetObject);
+                                                }
                                             }
                                             ImGui.Indent(-30 * ImGuiHelpers.GlobalScale);
                                         } else if(ImGui.IsItemHovered()) {

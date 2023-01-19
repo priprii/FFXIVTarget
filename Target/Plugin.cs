@@ -68,6 +68,7 @@ namespace Target {
             Windows.AddWindow(MainWindow);
             Windows.AddWindow(OverlayWindow);
 
+            PluginInterface.UiBuilder.DisableGposeUiHide = true;
             PluginInterface.UiBuilder.Draw += Windows.Draw;
             Framework.Update += Framework_Update;
             ChatGui.ChatMessage += OnChatMessage;
